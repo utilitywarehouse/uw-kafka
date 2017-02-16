@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+  name: broker
+  namespace: telecom
+spec:
+  ports:
+  - port: 9092
+  clusterIP: None
+  selector:
+    app: kafka
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: telecom
+spec:
+  ports:
+  - port: 9092
+  selector:
+    app: kafka
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: telecom
+spec:
+  serviceName: "broker"
+  replicas: 5
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+      - name: broker
+        image: registry.uw.systems/telecom/telecom-kafka
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits:
+            cpu: 1500m
+            memory: 3000Mi
+        livenessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 9092
+          timeoutSeconds: 1
+        ports:
+        - containerPort: 9092
+        command:
+        - bin/kafka-server-start.sh config/server.properties --override broker.id=$(hostname | awk -F'-' '{print $2}')
+        volumeMounts:
+        - name: datadir
+          mountPath: /opt/kafka/data
+        - name: config
+          mountPath: /opt/kafka/config
+        volumes:
+          - name: config
+            configMap:
+              name: kafka-configmap
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+      namespace: telecom
+      annotations:
+        volume.beta.kubernetes.io/storage-class: ebs-gp2
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-configmap
+  namespace: telecom
+data:
+  server.properties: |-
+    # https://kafka.apache.org/documentation/#brokerconfigs
+    broker.id=0
+    delete.topic.enable=true
+    auto.create.topics.enable=false
+    num.network.threads=3
+    num.io.threads=8
+    socket.send.buffer.bytes=102400
+    socket.receive.buffer.bytes=102400
+    socket.request.max.bytes=104857600
+    log.dirs=/opt/kafka/data
+    num.partitions=10
+    num.recovery.threads.per.data.dir=1
+    log.retention.hours=168
+    log.retention.bytes=1073741824
+    log.segment.bytes=1073741824
+    log.retention.check.interval.ms=300000
+    log.flush.offset.checkpoint.interval.ms=10000
+    zookeeper.connect=zoo-0.zk:2181,zoo-1.zk:2181,zoo-2.zk:2181
+    zookeeper.connection.timeout.ms=6000
+  log4j.properties: |-
+    log4j.rootLogger=INFO, stdout
+
+    log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+    log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+    log4j.appender.stdout.layout.ConversionPattern=[%d] %p %m (%c)%n
+
+    log4j.appender.kafkaAppender=org.apache.log4j.ConsoleAppender
+    log4j.appender.kafkaAppender.layout=org.apache.log4j.PatternLayout
+    log4j.appender.kafkaAppender.layout.ConversionPattern=[%d] %p %m (%c)%n
+
+    log4j.appender.stateChangeAppender=org.apache.log4j.ConsoleAppender
+    log4j.appender.stateChangeAppender.layout=org.apache.log4j.PatternLayout
+    log4j.appender.stateChangeAppender.layout.ConversionPattern=[%d] %p %m (%c)%n
+
+    log4j.appender.requestAppender=org.apache.log4j.ConsoleAppender
+    log4j.appender.requestAppender.layout=org.apache.log4j.PatternLayout
+    log4j.appender.requestAppender.layout.ConversionPattern=[%d] %p %m (%c)%n
+
+    log4j.appender.cleanerAppender=org.apache.log4j.ConsoleAppender
+    log4j.appender.cleanerAppender.layout=org.apache.log4j.PatternLayout
+    log4j.appender.cleanerAppender.layout.ConversionPattern=[%d] %p %m (%c)%n
+
+    log4j.appender.controllerAppender=org.apache.log4j.ConsoleAppender
+    log4j.appender.controllerAppender.layout=org.apache.log4j.PatternLayout
+    log4j.appender.controllerAppender.layout.ConversionPattern=[%d] %p %m (%c)%n
+
+    log4j.appender.authorizerAppender=org.apache.log4j.ConsoleAppender
+    log4j.appender.authorizerAppender.layout=org.apache.log4j.PatternLayout
+    log4j.appender.authorizerAppender.layout.ConversionPattern=[%d] %p %m (%c)%n
+
+    log4j.logger.kafka=INFO, kafkaAppender
+    log4j.logger.kafka.network.RequestChannel$=WARN, requestAppender
+    log4j.additivity.kafka.network.RequestChannel$=false
+    log4j.logger.kafka.request.logger=WARN, requestAppender
+    log4j.additivity.kafka.request.logger=false
+    log4j.logger.kafka.controller=WARN, controllerAppender
+    log4j.additivity.kafka.controller=false
+    log4j.logger.kafka.log.LogCleaner=WARN, cleanerAppender
+    log4j.additivity.kafka.log.LogCleaner=false
+    log4j.logger.state.change.logger=WARN, stateChangeAppender
+    log4j.additivity.state.change.logger=false
+    log4j.logger.kafka.authorizer.logger=WARN, authorizerAppender
+    log4j.additivity.kafka.authorizer.logger=false
