@@ -2,9 +2,12 @@ apiVersion: v1
 kind: Service
 metadata:
   annotations:
+    prometheus.io/scrape: 'true'
+    prometheus.io/path:   /metrics
+    prometheus.io/port:   '8080'
     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
   name: broker
-  namespace: telecom
+  namespace: acs
 spec:
   ports:
   - port: 9092
@@ -16,7 +19,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kafka
-  namespace: telecom
+  namespace: acs
 spec:
   ports:
   - port: 9092
@@ -27,7 +30,7 @@ apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: kafka
-  namespace: telecom
+  namespace: acs
 spec:
   serviceName: "broker"
   replicas: 5
@@ -38,7 +41,13 @@ spec:
     spec:
       containers:
       - name: broker
-        image: registry.uw.systems/telecom/telecom-kafka
+        imagePullPolicy: Always
+        image: registry.uw.systems/telecom/telecom-kafka:latest
+        env:
+          - name: KAFKA_HEAP_OPTS
+            value: "-Xmx1G -Xms1G"
+          - name: JMX_PORT
+            value: "9090"
         resources:
           requests:
             cpu: 100m
@@ -56,21 +65,36 @@ spec:
           timeoutSeconds: 1
         ports:
         - containerPort: 9092
-        command:
-        - bin/kafka-server-start.sh config/server.properties --override broker.id=$(hostname | awk -F'-' '{print $2}')
         volumeMounts:
         - name: datadir
           mountPath: /opt/kafka/data
-        - name: config
+        - name: kafka-configmap
           mountPath: /opt/kafka/config
-        volumes:
-          - name: config
-            configMap:
-              name: kafka-configmap
+      - name: jmx-exporter
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: jmx-exporter-configmap
+          mountPath: /app/config
+        image: registry.uw.systems/telecom/jmx-exporter:latest
+        env:
+          - name: PORT
+            value: '8080'
+        ports:
+        - name: web
+          containerPort: 8080
+      volumes:
+        - name: kafka-configmap
+          configMap:
+            name: kafka-configmap
+        - name: jmx-exporter-configmap
+          configMap:
+            name: jmx-exporter-configmap
+      imagePullSecrets:
+        - name: dockerhub-key
   volumeClaimTemplates:
   - metadata:
       name: datadir
-      namespace: telecom
+      namespace: acs
       annotations:
         volume.beta.kubernetes.io/storage-class: ebs-gp2
     spec:
@@ -83,7 +107,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kafka-configmap
-  namespace: telecom
+  namespace: acs
 data:
   server.properties: |-
     # https://kafka.apache.org/documentation/#brokerconfigs
@@ -95,16 +119,16 @@ data:
     socket.send.buffer.bytes=102400
     socket.receive.buffer.bytes=102400
     socket.request.max.bytes=104857600
-    log.dirs=/opt/kafka/data
+    log.dirs=/opt/kafka/data/logs
     num.partitions=10
-    num.recovery.threads.per.data.dir=1
+    num.recovery.threads.per.data.dir=8
     log.retention.hours=168
     log.retention.bytes=1073741824
     log.segment.bytes=1073741824
     log.retention.check.interval.ms=300000
     log.flush.offset.checkpoint.interval.ms=10000
-    zookeeper.connect=zoo-0.zk:2181,zoo-1.zk:2181,zoo-2.zk:2181
-    zookeeper.connection.timeout.ms=6000
+    zookeeper.connect=zookeeper:2181
+    zookeeper.connection.timeout.ms=10000
   log4j.properties: |-
     log4j.rootLogger=INFO, stdout
 
@@ -149,3 +173,15 @@ data:
     log4j.additivity.state.change.logger=false
     log4j.logger.kafka.authorizer.logger=WARN, authorizerAppender
     log4j.additivity.kafka.authorizer.logger=false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jmx-exporter-configmap
+  namespace: acs
+data:
+  config.yml: |-
+    ---
+    hostPort: localhost:9090
+    rules:
+    - pattern: ".*"
