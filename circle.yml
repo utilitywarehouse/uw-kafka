@@ -5,10 +5,21 @@ machine:
 dependencies:
   pre:
     - docker login -e none@none.com -u ${DOCKER_USER} -p ${DOCKER_PASS} registry.uw.systems
+
 test:
   post:
-    - docker build --rm=true -t registry.uw.systems/telecom/telecom-kafka:latest .
-    - docker tag registry.uw.systems/telecom/telecom-kafka:latest registry.uw.systems/telecom/telecom-kafka:$CIRCLE_BUILD_NUM
-    - docker tag registry.uw.systems/telecom/telecom-kafka:latest registry.uw.systems:utilitywarehouse/telecom-kafka:$CIRCLE_SHA1
-    - docker push registry.uw.systems/telecom/telecom-kafka:latest
-    - docker push registry.uw.systems/telecom/telecom-kafka:$CIRCLE_BUILD_NUM
+    - docker build -t registry.uw.systems/telecom/telecom-kafka:latest .
+
+deployment:
+  master:
+    branch:
+      - master
+    commands:
+      - docker tag registry.uw.systems/telecom/telecom-kafka:latest registry.uw.systems/telecom/telecom-kafka:$CIRCLE_SHA1
+      - docker push registry.uw.systems/telecom/telecom-kafka
+  any:
+    branch:
+      - /^(?!master$).*$/ # anything but master branch
+    commands:
+      - docker tag registry.uw.systems/telecom/telecom-kafka:latest registry.uw.systems/telecom/telecom-kafka:$CIRCLE_BUILD_NUM
+      - docker push registry.uw.systems/telecom/telecom-kafka:$CIRCLE_BUILD_NUM
