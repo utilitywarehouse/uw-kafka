@@ -11,7 +11,7 @@ ENV LANG=C.UTF-8 \
     JAVA_HOME=/opt/jdk \
     PATH=${PATH}:/opt/jdk/bin \
     LANG=C.UTF-8 \
-    KAFKA_VERSION="2.1.0"
+    KAFKA_VERSION="2.0.1"
 
 RUN ALPINE_GLIBC_BASE_URL="https://github.com/sgerrand/alpine-pkg-glibc/releases/download/" && \
     ALPINE_GLIBC_PACKAGE_VERSION="2.28-r0" && \
