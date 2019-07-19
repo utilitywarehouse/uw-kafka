@@ -1,10 +1,10 @@
-FROM adoptopenjdk/openjdk10:alpine-slim
+FROM adoptopenjdk/openjdk11:alpine-slim
 
 ENV LANG=C.UTF-8 \
     JAVA_HOME=/opt/java/openjdk \
     PATH=${PATH}:/opt/java/openjdk/bin \
     LANG=C.UTF-8 \
-    KAFKA_VERSION="2.0.1"
+    KAFKA_VERSION="2.3.0"
 
 RUN sed -i s/#networkaddress.cache.ttl=-1/networkaddress.cache.ttl=10/ $JAVA_HOME/conf/security/java.security
 
