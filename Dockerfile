@@ -4,7 +4,7 @@ ENV LANG=C.UTF-8 \
     JAVA_HOME=/opt/java/openjdk \
     PATH=${PATH}:/opt/java/openjdk/bin \
     LANG=C.UTF-8 \
-    KAFKA_VERSION="2.5.0"
+    KAFKA_VERSION="2.6.0"
 
 RUN sed -i s/#networkaddress.cache.ttl=-1/networkaddress.cache.ttl=10/ $JAVA_HOME/conf/security/java.security
 
