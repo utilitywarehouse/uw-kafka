@@ -1,6 +1,6 @@
 # Kafka
 
-[![Docker Repository on Quay](https://quay.io/repository/utilitywarehouse/uw-kafka/status "Docker Repository on Quay")](https://quay.io/repository/utilitywarehouse/uw-kafka)
+[![Build Status](https://drone.prod.merit.uw.systems/api/badges/utilitywarehouse/uw-kafka/status.svg)](https://drone.prod.merit.uw.systems/utilitywarehouse/uw-kafka)
 
 Alpine based kafka docker image.
 
