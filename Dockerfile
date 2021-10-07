@@ -1,10 +1,10 @@
-FROM adoptopenjdk/openjdk16:alpine-slim
+FROM eclipse-temurin:17-jdk-alpine
 
 ENV LANG=C.UTF-8 \
     JAVA_HOME=/opt/java/openjdk \
     PATH=${PATH}:/opt/java/openjdk/bin \
     LANG=C.UTF-8 \
-    KAFKA_VERSION="2.8.0" \
+    KAFKA_VERSION="3.0.0" \
     SCALA_VERSION="2.13"
 
 RUN sed -i s/#networkaddress.cache.ttl=-1/networkaddress.cache.ttl=10/ $JAVA_HOME/conf/security/java.security
