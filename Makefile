@@ -1,10 +1,10 @@
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 base_dir := $(notdir $(patsubst %/,%,$(dir $(mkfile_path))))
 
-SERVICE=telecom-kafka
+SERVICE=account-paltform-kafka
 
 DOCKER_REGISTRY?=registry.uw.systems
-DOCKER_REPOSITORY_NAMESPACE?=telecom
+DOCKER_REPOSITORY_NAMESPACE?=account-platform
 DOCKER_ID?=telco
 DOCKER_REPOSITORY_IMAGE=$(SERVICE)
 DOCKER_REPOSITORY=$(DOCKER_REGISTRY)/$(DOCKER_REPOSITORY_NAMESPACE)/$(DOCKER_REPOSITORY_IMAGE)
