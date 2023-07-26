@@ -12,7 +12,7 @@ RUN sed -i s/#networkaddress.cache.ttl=-1/networkaddress.cache.ttl=10/ $JAVA_HOM
 RUN mkdir -p /opt/kafka
 WORKDIR /opt/kafka
 
-RUN apk add --no-cache ca-certificates bash \
+RUN apk add --no-cache ca-certificates bash gcompat \
       && mkdir -p /opt/kafka \
       && wget -O - https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz \
            | tar xz -C /opt/kafka/ --strip 1
