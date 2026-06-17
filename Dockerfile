@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk-alpine
+FROM --platform=linux/amd64 eclipse-temurin:17-jdk-alpine
 
 ENV LANG=C.UTF-8 \
     JAVA_HOME=/opt/java/openjdk \
@@ -16,6 +16,7 @@ RUN apk add --no-cache ca-certificates bash gcompat \
       && mkdir -p /opt/kafka \
       && wget -O - https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz \
            | tar xz -C /opt/kafka/ --strip 1
+RUN apk update && apk add --no-cache libc6-compat
 
 RUN ["/bin/bash", "-c", "echo \"export LANG=C.UTF-8\" > /etc/profile.d/locale.sh"]
 WORKDIR /opt/kafka/bin
